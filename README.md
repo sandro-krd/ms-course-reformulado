@@ -1,5 +1,5 @@
 # Curso Microsserviços Java com Spring Boot e Spring Cloud
-## Atenção: curso específico para versões Java 11 e Spring Boot 2.3.4
+## Atenção: curso específico para versões Java 17 e Spring Boot 3.3.5
 #### Nelio Alves 
 - https://www.udemy.com/user/nelio-alves
 - https://youtube.com/devsuperior
@@ -7,8 +7,8 @@
 
 # Checklist baixar e executar projeto pronto
 
-- JDK 11, variáveis PATH e JAVA_HOME
-- Configurar IDE para pegar Java 11
+- JDK 17, variáveis PATH e JAVA_HOME
+- Configurar IDE para pegar Java 17
 - Importar projetos na IDE
 - Configurar credenciais do config server
   - Modelo do curso: https://github.com/acenelio/ms-course-configs
@@ -65,7 +65,7 @@ Run configuration
 ```
 -Dserver.port=8002
 ```
-# Fase 2: Eureka, Hystrix, Zuul
+# Fase 2: Eureka, Resilience4j, Spring Cloud Gateway
 
 ### 2.1 Criar projeto hr-eureka-server
 
@@ -94,7 +94,7 @@ eureka.instance.instance-id=${spring.application.name}:${spring.application.inst
 
 Atenção: deletar as configurações múltiplas de execução de hr-worker
 
-### 2.5 Tolerância a falhas com Hystrix
+### 2.5 Tolerância a falhas com Resilience4j
 
 ### 2.6 Timeout de Hystrix e Ribbon
 
@@ -106,16 +106,16 @@ ribbon.ConnectTimeout=10000
 ribbon.ReadTimeout=20000
 ```
 
-### 2.7 Criar projeto hr-zuul-server
+### 2.7 Criar projeto hr-api-gateway (Spring Cloud Gateway)
 
-### 2.8 Configurar hr-zuul-server
+### 2.8 Configurar hr-api-gateway
 
 Porta padrão: 8765
 
 ### 2.9 Random port para hr-payroll
 
 
-### 2.10 Zuul timeout
+### 2.10 Gateway timeout
 
 Mesmo o timeout de Hystrix e Ribbon configurado em um microsserviço, se o Zuul não tiver seu timeout configurado, para ele será um problema de timeout. Então precisamos configurar o timeout no Zuul.
 
