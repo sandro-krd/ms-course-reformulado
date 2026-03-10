@@ -18,6 +18,84 @@
   - Eureka server
   - Outros
 
+# Fluxo atual (Docker + OAuth2)
+
+## Subida recomendada
+
+Com os `Dockerfile` e `docker-compose.yml` deste repositório:
+
+```bash
+docker compose up --build
+```
+
+Serviços publicados no host:
+- Gateway: `http://localhost:8765`
+- Config Server: `http://localhost:8888`
+- Eureka: `http://localhost:8761`
+- Postgres hr-user: `localhost:5433`
+- Postgres hr-worker: `localhost:5432`
+
+## Fluxo de autenticação atual
+
+Este projeto está no modelo novo com **Spring Authorization Server**:
+- endpoint de token: `POST /oauth2/token`
+- grant type: `client_credentials`
+- autenticação do client via Basic Auth (`client-name` e `client-secret`)
+
+No `docker-compose.yml`, o `hr-oauth` sobe com os defaults:
+- `OAUTH_CLIENT_NAME=hr-client`
+- `OAUTH_CLIENT_SECRET=hr-secret`
+
+## Diagrama de interação entre microsserviços
+
+```mermaid
+flowchart LR
+  subgraph C["Cliente (Postman/Frontend)"]
+    U[Requisições HTTP]
+  end
+
+  subgraph N["Rede Docker: hr-net"]
+    G[hr-api-gateway-zuul :8765]
+    O[hr-oauth :8081]
+    E[hr-eureka-server :8761]
+    CFG[hr-config-server :8888]
+    P[hr-payroll]
+    UMS[hr-user]
+    W1[hr-worker-1]
+    W2[hr-worker-2]
+    DBU[(hr-user-pg12)]
+    DBW[(hr-worker-pg12)]
+  end
+
+  U --> G
+  U -->|token| G
+  G -->|/hr-oauth/**| O
+  G -->|/hr-user/**| UMS
+  G -->|/hr-worker/**| W1
+  G -->|/hr-worker/**| W2
+  G -->|/hr-payroll/**| P
+
+  O -->|Feign| UMS
+  P -->|Feign + LoadBalancer| W1
+  P -->|Feign + LoadBalancer| W2
+
+  UMS --> DBU
+  W1 --> DBW
+  W2 --> DBW
+
+  G --> E
+  O --> E
+  UMS --> E
+  W1 --> E
+  W2 --> E
+  P --> E
+
+  G --> CFG
+  O --> CFG
+  W1 --> CFG
+  W2 --> CFG
+```
+
 # Fase 1: Comunicação simples, Feign, Ribbon
 
 ### 1.1 Criar projeto hr-worker
@@ -166,6 +244,11 @@ Atenção: reinicie a IDE depois de adicionar as variáveis de ambiente
 ### 4.3 Entidades User, Role e associação N-N
 
 ### 4.4 Carga inicial do banco de dados
+
+No fluxo atual com Docker + PostgreSQL, os dados são carregados automaticamente via:
+- `hr-user/src/main/resources/data.sql`
+- `hr-worker/src/main/resources/data.sql`
+
 ```sql
 INSERT INTO tb_user (name, email, password) VALUES ('Nina Brown', 'nina@gmail.com', '$2a$10$NYFZ/8WaQ3Qb6FCs.00jce4nxX9w7AkgWVsQCG6oUwTAcZqP9Flqu');
 INSERT INTO tb_user (name, email, password) VALUES ('Leia Red', 'leia@gmail.com', '$2a$10$NYFZ/8WaQ3Qb6FCs.00jce4nxX9w7AkgWVsQCG6oUwTAcZqP9Flqu');
@@ -178,7 +261,7 @@ INSERT INTO tb_user_role (user_id, role_id) VALUES (2, 1);
 INSERT INTO tb_user_role (user_id, role_id) VALUES (2, 2);
 ```
 
-### 4.5 UserRepository, UserResource, Zuul config
+### 4.5 UserRepository, UserResource, Gateway config
 
 ### 4.6 Criar projeto hr-oauth
 
@@ -186,25 +269,29 @@ INSERT INTO tb_user_role (user_id, role_id) VALUES (2, 2);
 
 ### 4.8 UserFeignClient
 
-### 4.9 Login e geração do Token JWT
+### 4.9 Geração do Token JWT (fluxo atual)
 
-Source -> Override -> configure(AuthenticationManagerBuilder)
+Token endpoint:
+`POST {{api-gateway}}/hr-oauth/oauth2/token`
 
-Source -> Override -> authenticationManager()
+Headers:
+- `Authorization: Basic Base64(client-name:client-secret)`
+- `Content-Type: application/x-www-form-urlencoded`
 
-Basic authorization = "Basic " + Base64.encode(client-id + ":" + client-secret)
+Body (`x-www-form-urlencoded`):
+- `grant_type=client_credentials`
+- `scope=admin` (ou `operator`)
 
-### 4.10 Autorização de recursos pelo gateway Zuul
+### 4.10 Autorização de recursos pelo gateway
 
 ### 4.11 Deixando o Postman top
 
 Variáveis:
 - api-gateway: http://localhost:8765
 - config-host: http://localhost:8888
-- client-name: CLIENT-NAME
-- client-secret: CLIENT-SECRET
-- username: leia@gmail.com
-- password: 123456
+- client-name: hr-client
+- client-secret: hr-secret
+- token-scope: admin
 - token: 
 
 Script para atribuir token à variável de ambiente do Postman:

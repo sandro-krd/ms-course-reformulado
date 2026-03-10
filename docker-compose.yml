@@ -1,0 +1,175 @@
+services:
+  hr-user-pg12:
+    image: postgres:12-alpine
+    container_name: hr-user-pg12
+    environment:
+      POSTGRES_DB: hr_user
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - hr-user-pgdata:/var/lib/postgresql/data
+    networks:
+      - hr-net
+
+  hr-worker-pg12:
+    image: postgres:12-alpine
+    container_name: hr-worker-pg12
+    environment:
+      POSTGRES_DB: hr_worker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - hr-worker-pgdata:/var/lib/postgresql/data
+    networks:
+      - hr-net
+
+  hr-config-server:
+    build:
+      context: ./hr-config-server
+    container_name: hr-config-server
+    environment:
+      SERVER_PORT: 8888
+      GITHUB_USER: ${GITHUB_USER:-}
+      GITHUB_PASS: ${GITHUB_PASS:-}
+    ports:
+      - "8888:8888"
+    networks:
+      - hr-net
+
+  hr-eureka-server:
+    build:
+      context: ./hr-eureka-server
+    container_name: hr-eureka-server
+    environment:
+      SERVER_PORT: 8761
+    ports:
+      - "8761:8761"
+    depends_on:
+      - hr-config-server
+    networks:
+      - hr-net
+
+  hr-user:
+    build:
+      context: ./hr-user
+    container_name: hr-user
+    environment:
+      SERVER_PORT: 8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://hr-user-pg12:5432/hr_user
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: always
+      SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION: "true"
+    depends_on:
+      - hr-eureka-server
+      - hr-user-pg12
+    networks:
+      - hr-net
+
+  hr-worker-1:
+    build:
+      context: ./hr-worker
+    container_name: hr-worker-1
+    environment:
+      SERVER_PORT: 8080
+      SPRING_APPLICATION_INSTANCE_ID: hr-worker-1
+      SPRING_CONFIG_IMPORT: optional:configserver:http://hr-config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://hr-worker-pg12:5432/hr_worker
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: always
+      SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION: "true"
+    depends_on:
+      - hr-config-server
+      - hr-eureka-server
+      - hr-worker-pg12
+    networks:
+      - hr-net
+
+  hr-worker-2:
+    build:
+      context: ./hr-worker
+    container_name: hr-worker-2
+    environment:
+      SERVER_PORT: 8080
+      SPRING_APPLICATION_INSTANCE_ID: hr-worker-2
+      SPRING_CONFIG_IMPORT: optional:configserver:http://hr-config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://hr-worker-pg12:5432/hr_worker
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: never
+      SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION: "true"
+    depends_on:
+      - hr-worker-1
+    networks:
+      - hr-net
+
+  hr-payroll:
+    build:
+      context: ./hr-payroll
+    container_name: hr-payroll
+    environment:
+      SERVER_PORT: 8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+    depends_on:
+      - hr-eureka-server
+      - hr-worker-1
+      - hr-worker-2
+    networks:
+      - hr-net
+
+  hr-oauth:
+    build:
+      context: ./hr-oauth
+    container_name: hr-oauth
+    environment:
+      SERVER_PORT: 8081
+      SPRING_CONFIG_IMPORT: optional:configserver:http://hr-config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+      OAUTH_CLIENT_NAME: ${OAUTH_CLIENT_NAME:-hr-client}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-hr-secret}
+      OAUTH_ISSUER: http://hr-oauth:8081
+    depends_on:
+      - hr-config-server
+      - hr-eureka-server
+      - hr-user
+    networks:
+      - hr-net
+
+  hr-api-gateway-zuul:
+    build:
+      context: ./hr-api-gateway-zuul
+    container_name: hr-api-gateway-zuul
+    environment:
+      SERVER_PORT: 8765
+      SPRING_CONFIG_IMPORT: optional:configserver:http://hr-config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://hr-eureka-server:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://hr-oauth:8081
+    ports:
+      - "8765:8765"
+    depends_on:
+      - hr-config-server
+      - hr-eureka-server
+      - hr-oauth
+      - hr-payroll
+    networks:
+      - hr-net
+
+networks:
+  hr-net:
+    name: hr-net
+    driver: bridge
+
+volumes:
+  hr-user-pgdata:
+  hr-worker-pgdata:

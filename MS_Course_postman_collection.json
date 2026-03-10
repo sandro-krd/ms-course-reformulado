@@ -655,8 +655,8 @@
 							},
 							"response": []
 						},
-						{
-							"name": "Login",
+							{
+								"name": "Token (client_credentials)",
 							"event": [
 								{
 									"listen": "test",
@@ -696,35 +696,30 @@
 								"header": [],
 								"body": {
 									"mode": "urlencoded",
-									"urlencoded": [
-										{
-											"key": "username",
-											"value": "{{username}}",
-											"type": "text"
-										},
-										{
-											"key": "password",
-											"value": "{{password}}",
-											"type": "text"
-										},
-										{
-											"key": "grant_type",
-											"value": "password",
-											"type": "text"
-										}
-									]
-								},
-								"url": {
-									"raw": "{{api-gateway}}/hr-oauth/oauth/token",
-									"host": [
-										"{{api-gateway}}"
-									],
-									"path": [
-										"hr-oauth",
-										"oauth",
-										"token"
-									]
-								}
+										"urlencoded": [
+											{
+												"key": "grant_type",
+												"value": "client_credentials",
+												"type": "text"
+											},
+											{
+												"key": "scope",
+												"value": "{{token-scope}}",
+												"type": "text"
+											}
+										]
+									},
+									"url": {
+										"raw": "{{api-gateway}}/hr-oauth/oauth2/token",
+										"host": [
+											"{{api-gateway}}"
+										],
+										"path": [
+											"hr-oauth",
+											"oauth2",
+											"token"
+										]
+									}
 							},
 							"response": []
 						}
