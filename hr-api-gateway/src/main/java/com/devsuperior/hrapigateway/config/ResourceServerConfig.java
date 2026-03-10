@@ -1,4 +1,4 @@
-package com.devsuperior.hrapigatewayzuul.config;
+package com.devsuperior.hrapigateway.config;
 
 import java.util.List;
 

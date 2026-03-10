@@ -110,33 +110,33 @@ As permissões foram ajustadas via `SecurityWebFilterChain` com base em escopos 
 
 ## 7. Resumo das principais alterações por serviço
 
-### hr-api-gateway-zuul
+### hr-api-gateway
 
 - Migrado de Zuul para Spring Cloud Gateway
 - Implementação reativa de segurança (WebFlux)
-- Configuração de rotas via propriedades  
+- Configuração de rotas via propriedades
 
 ### hr-oauth
 
 - Migrado para Spring Authorization Server
 - JWT com chaves RSA dinâmicas
-- Novo modelo de cliente OAuth2  
+- Novo modelo de cliente OAuth2
 
 ### hr-payroll
 
-- Substituição de Hystrix por Resilience4j  
-- Substituição de Ribbon por LoadBalancer  
+- Substituição de Hystrix por Resilience4j
+- Substituição de Ribbon por LoadBalancer
 
 ### hr-user / hr-worker
 
-- Atualização para Jakarta EE  
-- Ajustes para o novo bootstrap de configuração  
+- Atualização para Jakarta EE
+- Ajustes para o novo bootstrap de configuração
 
 ## 8. Próximos passos recomendados
 
 Para quem for continuar a evolução do projeto:
 
-- Considerar um **Config Server mais seguro** com autenticação/criptação de secrets.  
-- Evoluir o **Authorization Server** para persistir clientes e tokens em banco.  
-- Habilitar observabilidade com **Micrometer + Prometheus + Grafana**.  
+- Considerar um **Config Server mais seguro** com autenticação/criptação de secrets.
+- Evoluir o **Authorization Server** para persistir clientes e tokens em banco.
+- Habilitar observabilidade com **Micrometer + Prometheus + Grafana**.
 - Atualizar a documentação do Postman com novos endpoints e fluxos OAuth2.

@@ -55,7 +55,7 @@ flowchart LR
   end
 
   subgraph N["Rede Docker: hr-net"]
-    G[hr-api-gateway-zuul :8765]
+    G[hr-api-gateway :8765]
     O[hr-oauth :8081]
     E[hr-eureka-server :8761]
     CFG[hr-config-server :8888]
